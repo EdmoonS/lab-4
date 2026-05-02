@@ -42,25 +42,17 @@ jobs:
       - name: Instalar Semgrep
         run: pip install semgrep
 
-      # TODO ▼ ─────────────────────────────────────────────────────────────
       # Paso 3: ejecutar el análisis de Semgrep.
-      #
-      # Comando base:  semgrep --config <ruleset> <ruta-a-analizar>
-      #
-      # Rulesets requeridos (sepáralos con espacios usando --config cada vez):
-      #   p/python          → reglas generales para Python
-      #   p/owasp-top-ten   → vulnerabilidades del OWASP Top 10
-      #   p/secrets         → credenciales y secretos en el código
-      #   p/sql-injection   → inyección SQL
-      #
-      # Ruta a analizar: app/
-      #
-      # Agrega --error para que el job falle si Semgrep encuentra algo.
-      # ¿Qué implicación tiene eso en un pipeline de CI/CD real?
       - name: Ejecutar análisis SAST
         run: |
-          # TODO: escribe aquí el comando de Semgrep con los 4 rulesets
-
+          semgrep --config p/python \
+          --config p/owasp-top-ten \
+          --config p/secrets \
+          --config p/sql-injection \
+          --error \
+          --json \
+          --output=semgrep-results.json \
+          app/
 
   # ═══════════════════════════════════════════════════════════════════════════
   # ETAPA 2 — SCA (Software Composition Analysis)
@@ -82,22 +74,15 @@ jobs:
         with:
           python-version: "3.11"
 
-      # TODO ▼ ─────────────────────────────────────────────────────────────
       # Paso 3: instalar pip-audit y ejecutar la auditoría.
-      #
-      # pip-audit se instala con pip igual que cualquier paquete.
-      # Para auditar un archivo de dependencias específico:
-      #   pip-audit -r <ruta-al-requirements.txt>
-      #
-      # Recuerda: el requirements.txt está en app/requirements.txt
-      #
-      # Pregunta: ¿qué CVEs aparecen al correr la auditoría?
-      #           ¿Cuáles de los paquetes tienen versiones seguras disponibles?
       - name: Instalar y ejecutar pip-audit
         run: |
-          # TODO: instala pip-audit
-          # TODO: ejecuta la auditoría sobre app/requirements.txt
-
+          pip install pip-audit
+          pip-audit -r app/requirements.txt \
+          --format=json \
+          --output=audit-report.json || true
+          echo "--- Reporte de CVEs ---"
+          pip-audit -r app/requirements.txt
 
   # ═══════════════════════════════════════════════════════════════════════════
   # ETAPA 3 — TESTS
@@ -118,22 +103,12 @@ jobs:
         with:
           python-version: "3.11"
 
-      # TODO ▼ ─────────────────────────────────────────────────────────────
       # Paso 3: instalar las dependencias e instalar pytest.
-      #
-      # Necesitas dos comandos:
-      #   a) instalar los paquetes de app/requirements.txt
-      #   b) instalar pytest (si no viene en requirements.txt)
-      #
-      # Luego ejecuta pytest indicando la carpeta tests/.
-      # Agrega -v para ver el detalle de cada test.
-      #
-      # Pregunta: ¿qué pasa si un test falla? ¿Se bloquea el merge del PR?
       - name: Instalar dependencias
         run: |
-          # TODO: instala las dependencias del proyecto
-          # TODO: instala pytest
+          pip install -r app/requirements.txt
+          pip install pytest
 
       - name: Ejecutar tests
         run: |
-          # TODO: ejecuta pytest sobre la carpeta tests/
+          pytest tests/ -v
