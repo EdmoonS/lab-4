@@ -2,67 +2,111 @@
   "version": "1.86.0",
   "results": [
     {
-      "check_id": "python.lang.security.audit.formatted-sql-query.formatted-sql-query",
+      "check_id": "python.django.security.injection.sql.sql-injection-using-db-cursor-execute.sql-injection-db-cursor-execute",
+      "path": "Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/app.py",
+      "start": { "line": 75, "col": 5 },
+      "end":   { "line": 81, "col": 30 },
+      "extra": {
+        "severity": "ERROR",
+        "message": "User-controlled data from a request is passed to 'execute()'. This could lead to a SQL injection and therefore protected information could be leaked. Instead, use django's QuerySets, which are built with query parameterization and therefore not vulnerable to sql injection.",
+        "lines": "    query = f\"SELECT id, username, email, role FROM users WHERE username = '{username}'\"",
+        "metadata": {
+          "cwe": ["CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"],
+          "owasp": ["A03:2021 - Injection"],
+          "references": ["https://sg.run/qx7y"],
+          "confidence": "HIGH",
+          "category": "security"
+        }
+      }
+    },
+    {
+      "check_id": "python.flask.security.injection.tainted-sql-string.tainted-sql-string",
       "path": "Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/app.py",
       "start": { "line": 80, "col": 5 },
       "end":   { "line": 80, "col": 83 },
       "extra": {
         "severity": "ERROR",
-        "message": "Detected SQL statement that is tainted by `request` object. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. In order to prevent SQL injection, use parameterized queries or prepared statements instead. You can use parameterized statements like so: `cursor.execute('SELECT * FROM users WHERE username = %s', (username,))`",
+        "message": "Detected user input used to manually construct a SQL string. This is usually bad practice because manual construction could accidentally result in a SQL injection. An attacker could use a SQL injection to steal or modify contents of the database. Instead, use a parameterized query which is available by default in most database engines.",
         "lines": "    query = f\"SELECT id, username, email, role FROM users WHERE username = '{username}'\"",
         "metadata": {
           "cwe": ["CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"],
           "owasp": ["A03:2021 - Injection"],
-          "references": ["https://owasp.org/Top10/A03_2021-Injection/"],
-          "confidence": "HIGH"
+          "references": ["https://sg.run/JxZj"],
+          "confidence": "HIGH",
+          "category": "security"
+        }
+      }
+    },
+    {
+      "check_id": "python.flask.security.injection.subprocess-injection.subprocess-injection",
+      "path": "Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/app.py",
+      "start": { "line": 130, "col": 5 },
+      "end":   { "line": 136, "col": 6 },
+      "extra": {
+        "severity": "ERROR",
+        "message": "Detected user input entering a `subprocess` call unsafely. This could result in a command injection vulnerability. An attacker could use this vulnerability to execute arbitrary commands on the host, which allows them to download malware, scan sensitive data, or run any command they wish on the server.",
+        "lines": "    result = subprocess.run(\n        f'ping {flag} 1 {host}',\n        shell=True,\n        capture_output=True,\n        text=True,\n        timeout=10\n    )",
+        "metadata": {
+          "cwe": ["CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"],
+          "owasp": ["A03:2021 - Injection"],
+          "references": ["https://sg.run/5gW3"],
+          "confidence": "HIGH",
+          "category": "security"
+        }
+      }
+    },
+    {
+      "check_id": "python.lang.security.dangerous-subprocess-use.dangerous-subprocess-use",
+      "path": "Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/app.py",
+      "start": { "line": 131, "col": 9 },
+      "end":   { "line": 131, "col": 30 },
+      "extra": {
+        "severity": "ERROR",
+        "message": "Detected subprocess function 'run' with user controlled data. A malicious actor could leverage this to perform command injection. You may consider using 'shlex.escape()'.",
+        "lines": "        f'ping {flag} 1 {host}',",
+        "metadata": {
+          "cwe": ["CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"],
+          "owasp": ["A03:2021 - Injection"],
+          "references": ["https://sg.run/NWxp"],
+          "confidence": "MEDIUM",
+          "category": "security"
         }
       }
     },
     {
       "check_id": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
       "path": "Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/app.py",
-      "start": { "line": 131, "col": 5 },
-      "end":   { "line": 131, "col": 62 },
+      "start": { "line": 132, "col": 9 },
+      "end":   { "line": 132, "col": 21 },
       "extra": {
         "severity": "ERROR",
-        "message": "Detected subprocess function with `shell=True`. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use `shell=False` instead.",
-        "lines": "    result = subprocess.run(f'ping {flag} 1 {host}', shell=True, capture_output=True, text=True, timeout=10)",
+        "message": "Found 'subprocess' function 'run' with 'shell=True'. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use 'shell=False' instead.",
+        "lines": "        shell=True,",
+        "fix": "False",
         "metadata": {
           "cwe": ["CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"],
           "owasp": ["A03:2021 - Injection"],
-          "confidence": "HIGH"
+          "references": ["https://sg.run/J92w"],
+          "confidence": "HIGH",
+          "category": "security"
         }
       }
     },
     {
-      "check_id": "python.lang.security.audit.hardcoded-password.hardcoded-password",
+      "check_id": "python.flask.security.audit.app-run-param-config.avoid_app_run_with_bad_host",
       "path": "Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/app.py",
-      "start": { "line": 14, "col": 1 },
-      "end":   { "line": 14, "col": 37 },
+      "start": { "line": 161, "col": 5 },
+      "end":   { "line": 161, "col": 43 },
       "extra": {
-        "severity": "WARNING",
-        "message": "Detected a hardcoded password: 'SuperSecret123!'. Hardcoding credentials is a security risk because it allows anyone with source code access to use the secret. Store credentials in environment variables or a secrets manager.",
-        "lines": "DB_PASSWORD = 'SuperSecret123!'",
+        "severity": "ERROR",
+        "message": "Running flask app with host 0.0.0.0 could expose the server publicly.",
+        "lines": "    app.run(host='0.0.0.0', debug=True)",
         "metadata": {
-          "cwe": ["CWE-798: Use of Hard-coded Credentials"],
-          "owasp": ["A07:2021 - Identification and Authentication Failures"],
-          "confidence": "HIGH"
-        }
-      }
-    },
-    {
-      "check_id": "python.lang.security.audit.hardcoded-password.hardcoded-password",
-      "path": "Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/app.py",
-      "start": { "line": 15, "col": 1 },
-      "end":   { "line": 15, "col": 52 },
-      "extra": {
-        "severity": "WARNING",
-        "message": "Detected a hardcoded password: 'hardcoded-secret-key-never-do-this'. Hardcoding credentials is a security risk.",
-        "lines": "SECRET_KEY = 'hardcoded-secret-key-never-do-this'",
-        "metadata": {
-          "cwe": ["CWE-798: Use of Hard-coded Credentials"],
-          "owasp": ["A07:2021 - Identification and Authentication Failures"],
-          "confidence": "HIGH"
+          "cwe": ["CWE-284: Improper Access Control"],
+          "owasp": ["A05:2021 - Security Misconfiguration"],
+          "references": ["https://sg.run/eLby"],
+          "confidence": "HIGH",
+          "category": "security"
         }
       }
     },
@@ -72,21 +116,26 @@
       "start": { "line": 161, "col": 5 },
       "end":   { "line": 161, "col": 43 },
       "extra": {
-        "severity": "WARNING",
-        "message": "Flask app is running with debug=True. This enables the interactive debugger and allows arbitrary code execution. Disable debug mode in production.",
+        "severity": "ERROR",
+        "message": "Detected Flask app with debug=True. Do not deploy to production with this flag enabled as it will leak sensitive information. Instead, consider using Flask configuration variables or setting 'debug' using system environment variables.",
         "lines": "    app.run(host='0.0.0.0', debug=True)",
         "metadata": {
           "cwe": ["CWE-94: Improper Control of Generation of Code"],
           "owasp": ["A05:2021 - Security Misconfiguration"],
-          "confidence": "HIGH"
+          "references": ["https://sg.run/dKrd"],
+          "confidence": "HIGH",
+          "category": "security"
         }
       }
     }
   ],
   "errors": [],
   "stats": {
-    "findings": 5,
+    "findings": 7,
+    "blocking": 7,
     "errors": 0,
-    "total_time": 4.21
+    "rules_run": 191,
+    "targets_scanned": 4,
+    "total_time": 27.4
   }
 }

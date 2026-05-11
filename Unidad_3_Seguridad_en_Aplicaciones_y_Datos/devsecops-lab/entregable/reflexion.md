@@ -8,21 +8,26 @@
 
 **Respuesta:**
 
-En `app.py`, el endpoint `POST /user` acepta el campo `role` directamente del JSON del cliente sin validar que sea un valor permitido (líneas 93–94):
+El pipeline ejecutado con los rulesets `p/python`, `p/owasp-top-ten`, `p/secrets` y `p/sql-injection` detectó **7 findings** — pero dejó pasar al menos dos vulnerabilidades presentes en el código:
 
+**Ejemplo 1 — Hardcoded Secrets (líneas 14–15) — no detectado por Semgrep:**
+```python
+DB_PASSWORD = 'SuperSecret123!'
+SECRET_KEY  = 'hardcoded-secret-key-never-do-this'
+```
+El ruleset `p/secrets` busca patrones de tokens conocidos (AWS keys, JWT, API keys con prefijos reconocibles). Un string genérico como `'SuperSecret123!'` no coincide con ningún patrón, por lo que Semgrep no lo marca. Sin embargo, es una credencial de base de datos expuesta en texto claro. Para detectarla se requiere Secret Scanning de GitHub (que sí la encontró) o una regla Semgrep personalizada que busque asignaciones a variables llamadas `*PASSWORD*` o `*SECRET*`.
+
+**Ejemplo 2 — Broken Access Control en POST /user (líneas 93–94) — no detectado:**
 ```python
 role = data.get('role', 'user').strip()
 db.execute('INSERT INTO users (..., role) VALUES (?, ?, ?)', (username, email, role))
 ```
+Un atacante envía `{"username":"hacker","email":"h@x.com","role":"admin"}` y obtiene privilegios de administrador. Semgrep no puede detectarlo porque:
+1. La query usa parámetros correctamente — no hay SQL injection sintáctica
+2. La vulnerabilidad es **lógica**: el campo `role` nunca debería aceptarse del cliente
+3. Solo se detecta ejecutando la aplicación con DAST (OWASP ZAP) o con revisión manual del flujo de autorización
 
-Un atacante puede enviar `{"username":"hacker","email":"h@x.com","role":"admin"}` y obtener privilegios de administrador sin autenticarse. Esta es una vulnerabilidad de **Broken Access Control** (OWASP A01:2021).
-
-Semgrep no puede detectarla porque:
-1. Sintácticamente el código es correcto — no hay concatenación ni `shell=True`
-2. La vulnerabilidad es **lógica**: el problema es que el campo `role` nunca debería venir del cliente
-3. Solo se detecta ejecutando la aplicación y probando el comportamiento real (DAST) o con revisión manual del flujo de autorización
-
-Para detectarla se requiere DAST (por ejemplo, OWASP ZAP enviando el payload) o una revisión de código manual con perspectiva de diseño de autorización.
+Esto demuestra que SAST y DAST son **complementarios**, no sustitutos. SAST detecta patrones peligrosos en el código; DAST detecta comportamientos incorrectos en tiempo de ejecución.
 
 ---
 
