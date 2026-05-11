@@ -46,37 +46,38 @@ jobs:
   sast:
     name: SAST - Semgrep
     runs-on: ubuntu-latest
-    continue-on-error: true   # falla visible pero no bloquea tests
+    # Sin continue-on-error → el job queda ROJO cuando Semgrep
+    # detecta vulnerabilidades. Ese es el comportamiento correcto:
+    # el pipeline avisa visualmente que hay problemas de seguridad.
     timeout-minutes: 10
 
     steps:
-      # Paso 1: descargar el código del repositorio al runner.
-      # Esta action es estándar en casi todo workflow de GitHub Actions.
       - name: Checkout del repositorio
         uses: actions/checkout@v4
 
-      # Paso 2: instalar Semgrep en el runner.
-      # Semgrep es un paquete de Python, se instala con pip.
       - name: Instalar Semgrep
         run: pip install semgrep
 
       - name: Ejecutar análisis SAST
         run: |
+          # Guardar resultados en JSON para el artifact
+          semgrep \
+            --config p/python \
+            --config p/owasp-top-ten \
+            --config p/secrets \
+            --config p/sql-injection \
+            --json \
+            --output=semgrep-results.json \
+            Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/ || true
+
+          # Segunda ejecución con --error: falla el job si hay hallazgos
+          # (esto es lo que pone el job en ROJO en la pestaña Actions)
           semgrep \
             --config p/python \
             --config p/owasp-top-ten \
             --config p/secrets \
             --config p/sql-injection \
             --error \
-            --json \
-            --output=semgrep-results.json \
-            Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/ || true
-
-          semgrep \
-            --config p/python \
-            --config p/owasp-top-ten \
-            --config p/secrets \
-            --config p/sql-injection \
             Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/
 
       - name: Guardar resultados SAST
@@ -111,14 +112,19 @@ jobs:
       - name: Instalar y ejecutar pip-audit
         run: |
           pip install pip-audit
+
+          echo "════ CVEs detectados ════"
+          # || true → pip-audit devuelve exit code 1 cuando encuentra CVEs.
+          # Con || true el job queda VERDE: reporta los CVEs pero no bloquea
+          # el pipeline. Los CVEs quedan visibles en el log y en el artifact.
           pip-audit \
             -r Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/requirements.txt \
             --format=json \
             --output=audit-report.json || true
 
-          echo "════ CVEs detectados ════"
           pip-audit \
-            -r Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/requirements.txt
+            -r Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/requirements.txt \
+            || true
 
       - name: Guardar reporte de auditoría
         uses: actions/upload-artifact@v4
@@ -140,7 +146,10 @@ jobs:
   tests:
     name: Tests - pytest
     runs-on: ubuntu-latest
-    needs: [ sast, sca ]   # espera a que SAST y SCA terminen primero
+    needs: [ sast, sca ]
+    # if: always() → los tests corren aunque SAST esté en ROJO.
+    # Sin esto, GitHub saltaría los tests cuando un job previo falla.
+    if: always()
     timeout-minutes: 10
 
     steps:
