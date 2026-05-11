@@ -1,0 +1,92 @@
+{
+  "version": "1.86.0",
+  "results": [
+    {
+      "check_id": "python.lang.security.audit.formatted-sql-query.formatted-sql-query",
+      "path": "Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/app.py",
+      "start": { "line": 80, "col": 5 },
+      "end":   { "line": 80, "col": 83 },
+      "extra": {
+        "severity": "ERROR",
+        "message": "Detected SQL statement that is tainted by `request` object. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. In order to prevent SQL injection, use parameterized queries or prepared statements instead. You can use parameterized statements like so: `cursor.execute('SELECT * FROM users WHERE username = %s', (username,))`",
+        "lines": "    query = f\"SELECT id, username, email, role FROM users WHERE username = '{username}'\"",
+        "metadata": {
+          "cwe": ["CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"],
+          "owasp": ["A03:2021 - Injection"],
+          "references": ["https://owasp.org/Top10/A03_2021-Injection/"],
+          "confidence": "HIGH"
+        }
+      }
+    },
+    {
+      "check_id": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+      "path": "Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/app.py",
+      "start": { "line": 131, "col": 5 },
+      "end":   { "line": 131, "col": 62 },
+      "extra": {
+        "severity": "ERROR",
+        "message": "Detected subprocess function with `shell=True`. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use `shell=False` instead.",
+        "lines": "    result = subprocess.run(f'ping {flag} 1 {host}', shell=True, capture_output=True, text=True, timeout=10)",
+        "metadata": {
+          "cwe": ["CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"],
+          "owasp": ["A03:2021 - Injection"],
+          "confidence": "HIGH"
+        }
+      }
+    },
+    {
+      "check_id": "python.lang.security.audit.hardcoded-password.hardcoded-password",
+      "path": "Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/app.py",
+      "start": { "line": 14, "col": 1 },
+      "end":   { "line": 14, "col": 37 },
+      "extra": {
+        "severity": "WARNING",
+        "message": "Detected a hardcoded password: 'SuperSecret123!'. Hardcoding credentials is a security risk because it allows anyone with source code access to use the secret. Store credentials in environment variables or a secrets manager.",
+        "lines": "DB_PASSWORD = 'SuperSecret123!'",
+        "metadata": {
+          "cwe": ["CWE-798: Use of Hard-coded Credentials"],
+          "owasp": ["A07:2021 - Identification and Authentication Failures"],
+          "confidence": "HIGH"
+        }
+      }
+    },
+    {
+      "check_id": "python.lang.security.audit.hardcoded-password.hardcoded-password",
+      "path": "Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/app.py",
+      "start": { "line": 15, "col": 1 },
+      "end":   { "line": 15, "col": 52 },
+      "extra": {
+        "severity": "WARNING",
+        "message": "Detected a hardcoded password: 'hardcoded-secret-key-never-do-this'. Hardcoding credentials is a security risk.",
+        "lines": "SECRET_KEY = 'hardcoded-secret-key-never-do-this'",
+        "metadata": {
+          "cwe": ["CWE-798: Use of Hard-coded Credentials"],
+          "owasp": ["A07:2021 - Identification and Authentication Failures"],
+          "confidence": "HIGH"
+        }
+      }
+    },
+    {
+      "check_id": "python.flask.security.audit.debug-enabled.debug-enabled",
+      "path": "Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/app.py",
+      "start": { "line": 161, "col": 5 },
+      "end":   { "line": 161, "col": 43 },
+      "extra": {
+        "severity": "WARNING",
+        "message": "Flask app is running with debug=True. This enables the interactive debugger and allows arbitrary code execution. Disable debug mode in production.",
+        "lines": "    app.run(host='0.0.0.0', debug=True)",
+        "metadata": {
+          "cwe": ["CWE-94: Improper Control of Generation of Code"],
+          "owasp": ["A05:2021 - Security Misconfiguration"],
+          "confidence": "HIGH"
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "findings": 5,
+    "errors": 0,
+    "total_time": 4.21
+  }
+}

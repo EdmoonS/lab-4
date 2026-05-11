@@ -1,0 +1,129 @@
+name: Pipeline de Seguridad DevSecOps
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # ══════════════════════════════════════════════
+  # ETAPA 1 — SAST: Análisis estático con Semgrep
+  # ══════════════════════════════════════════════
+  sast:
+    name: "SAST - Semgrep"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Instalar Semgrep
+        run: pip install semgrep
+
+      - name: Ejecutar análisis SAST
+        run: |
+          semgrep \
+            --config p/python \
+            --config p/owasp-top-ten \
+            --config p/secrets \
+            --config p/sql-injection \
+            --json \
+            --output=semgrep-results.json \
+            Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/ || true
+
+          echo "════ Resumen de vulnerabilidades detectadas ════"
+          semgrep \
+            --config p/python \
+            --config p/owasp-top-ten \
+            --config p/secrets \
+            --config p/sql-injection \
+            Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/
+
+      - name: Guardar resultados SAST
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semgrep-results
+          path: semgrep-results.json
+
+  # ══════════════════════════════════════════════
+  # ETAPA 2 — SCA: Análisis de dependencias
+  # ══════════════════════════════════════════════
+  sca:
+    name: "SCA - pip-audit"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar y ejecutar pip-audit
+        run: |
+          pip install pip-audit
+          echo "════ CVEs en dependencias ════"
+          pip-audit \
+            -r Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/requirements.txt \
+            --format=json \
+            --output=audit-report.json || true
+
+          pip-audit \
+            -r Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/requirements.txt
+
+      - name: Guardar reporte de auditoría
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pip-audit-report
+          path: audit-report.json
+
+  # ══════════════════════════════════════════════
+  # ETAPA 3 — Tests con pytest
+  # ══════════════════════════════════════════════
+  tests:
+    name: "Tests - pytest"
+    runs-on: ubuntu-latest
+    needs: [sast, sca]
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: |
+          pip install -r Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app/requirements.txt
+          pip install pytest
+
+      - name: Ejecutar tests
+        run: |
+          pytest Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/tests/ -v
+
+  # ══════════════════════════════════════════════
+  # ESTADO FINAL del pipeline
+  # ══════════════════════════════════════════════
+  pipeline-status:
+    name: "Estado final del pipeline"
+    runs-on: ubuntu-latest
+    needs: [sast, sca, tests]
+    if: always()
+    steps:
+      - name: Resumen de resultados
+        run: |
+          echo "╔══════════════════════════════════════╗"
+          echo "║    RESUMEN DEL PIPELINE DEVSECOPS    ║"
+          echo "╠══════════════════════════════════════╣"
+          echo "║  SAST (Semgrep):  ${{ needs.sast.result }}"
+          echo "║  SCA (pip-audit): ${{ needs.sca.result }}"
+          echo "║  Tests (pytest):  ${{ needs.tests.result }}"
+          echo "╚══════════════════════════════════════╝"
+          echo ""
+          echo "SAST en ROJO = el pipeline funciona correctamente."
+          echo "Las vulnerabilidades intencionales fueron detectadas."
