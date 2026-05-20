@@ -1,1 +1,6 @@
-
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/Unidad_3_Seguridad_en_Aplicaciones_y_Datos/devsecops-lab/app"
+    schedule:
+      interval: "daily"
